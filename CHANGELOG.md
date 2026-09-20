@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8
+
+- Reuse Safari between routes and retry simulator URL timeouts.
+- Match the ranking title to verify each route.
+
 ## 0.1.7
 
 - Wait for the video recorder before opening each page.

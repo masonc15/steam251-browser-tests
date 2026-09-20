@@ -66,9 +66,7 @@ try:
     run('open', '-a', 'Simulator', '--args', '-CurrentDeviceUDID', UDID)
     time.sleep(5)
     run('xcrun', 'simctl', 'status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged', '--batteryLevel', '100')
-    for name, path, expected in [('home', '/', 'Week Top 50'), ('week', '/7day', 'Hide Early Access'), ('month', '/30day', 'Hide Early Access'), ('detective', '/tag/5613', 'Detective')]:
-        if name != 'home':
-            run('xcrun', 'simctl', 'terminate', UDID, 'com.apple.mobilesafari', check=False)
+    for name, path, expected in [('home', '/', 'Week Top 50'), ('week', '/7day', 'Week Top 50'), ('month', '/30day', 'Month Top 100'), ('detective', '/tag/5613', 'Detective')]:
         log = (OUT / f'{name}-recording.log').open('w')
         recorder = subprocess.Popen(['xcrun', 'simctl', 'io', UDID, 'recordVideo', '--codec=h264', '--force', str(OUT / f'{name}.mp4')], stdout=log, stderr=log)
         try:
@@ -77,11 +75,20 @@ try:
                 if recorder.poll() is not None or time.monotonic() > deadline:
                     raise RuntimeError(f'{name}: video recorder did not become ready')
                 time.sleep(.25)
-            run('xcrun', 'simctl', 'openurl', UDID, f'https://steam251.com{path}?safari-check={time.time_ns()}')
+            url = f'https://steam251.com{path}?safari-check={time.time_ns()}'
+            for attempt in range(3):
+                try:
+                    run('xcrun', 'simctl', 'openurl', UDID, url)
+                    break
+                except RuntimeError as error:
+                    if 'Operation timed out' not in str(error) or attempt == 2:
+                        raise
+                    print(f'Retry {attempt + 1} after simulator openurl timeout', flush=True)
+                    time.sleep(3)
             data = wait_for_page(name, expected)
             time.sleep(3)
             screenshot(name)
-            results.append({'route': path, 'screenshot_text_verified': True, 'visual_review': 'required', 'cache': 'new simulator for home; later routes share asset cache'})
+            results.append({'openurl_retries': attempt, 'route': path, 'screenshot_text_verified': True, 'visual_review': 'required', 'cache': 'new simulator for home; later routes share asset cache'})
             if name == 'week':
                 checkbox = next((row for row in data['rows'] if 'Hide Early Access' in row['text']), None)
                 if checkbox:
