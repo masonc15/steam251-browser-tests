@@ -21,36 +21,6 @@ def run(*args, timeout=60, check=True):
     return p.stdout
 
 
-def ax(name):
-    raw = run('idb', 'ui', 'describe-all', '--udid', UDID, '--json')
-    (OUT / f'{name}.json').write_text(raw)
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        data = [json.loads(line) for line in raw.splitlines() if line.startswith('{')]
-    return data
-
-
-def elements(data):
-    if isinstance(data, list):
-        for item in data:
-            yield from elements(item)
-    elif isinstance(data, dict):
-        yield data
-        for value in data.values():
-            if isinstance(value, (list, dict)):
-                yield from elements(value)
-
-
-def tap(node):
-    f = node.get('frame', {})
-    if not all(k in f for k in ('x', 'y', 'width', 'height')):
-        return False
-    run('idb', 'ui', 'tap', '--udid', UDID,
-        str(f['x'] + f['width'] / 2), str(f['y'] + f['height'] / 2))
-    return True
-
-
 def screenshot(name):
     run('xcrun', 'simctl', 'io', UDID, 'screenshot', str(OUT / f'{name}.png'))
 
@@ -65,7 +35,7 @@ def wait_for_page(name, expected):
             # Close the first-run tip seen in the iPhone 17 Pro / iOS 26.2
             # screenshot. Coordinates are scaled from that observed screen.
             run('idb', 'ui', 'tap', '--udid', UDID,
-                str(data['width'] / 3 * .907), str(data['height'] / 3 * .710))
+                str(round(data['width'] / 3 * .907)), str(round(data['height'] / 3 * .710)))
             time.sleep(1)
             continue
         compact = lambda text: re.sub(r'[^a-z0-9]', '', text.lower())
@@ -94,7 +64,8 @@ try:
     run('xcrun', 'simctl', 'bootstatus', UDID, '-b', timeout=240)
     run('xcrun', 'simctl', 'status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged', '--batteryLevel', '100')
     for name, path, expected in [('home', '/', 'Week Top 50'), ('week', '/7day', 'Hide Early Access'), ('month', '/30day', 'Hide Early Access'), ('detective', '/tag/5613', 'Detective')]:
-        run('xcrun', 'simctl', 'terminate', UDID, 'com.apple.mobilesafari', check=False)
+        if name != 'home':
+            run('xcrun', 'simctl', 'terminate', UDID, 'com.apple.mobilesafari', check=False)
         log = (OUT / f'{name}-recording.log').open('w')
         recorder = subprocess.Popen(['xcrun', 'simctl', 'io', UDID, 'recordVideo', '--codec=h264', '--force', str(OUT / f'{name}.mp4')], stdout=log, stderr=log)
         try:
@@ -108,7 +79,7 @@ try:
                 checkbox = next((row for row in data['rows'] if 'Hide Early Access' in row['text']), None)
                 if checkbox:
                     run('idb', 'ui', 'tap', '--udid', UDID,
-                        str(checkbox['x'] * data['width'] / 3), str(checkbox['y'] * data['height'] / 3))
+                        str(round(checkbox['x'] * data['width'] / 3)), str(round(checkbox['y'] * data['height'] / 3)))
                     time.sleep(1)
                     screenshot('week-filter-after')
                     results[-1]['filter_tap_sent'] = True

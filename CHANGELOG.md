@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- Send integer tap coordinates to idb.
+- Avoid terminating Safari before its first launch.
+
 ## 0.1.4
 
 - Read Safari screenshots with Apple Vision when accessibility cannot respond.
