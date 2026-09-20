@@ -72,7 +72,11 @@ try:
         log = (OUT / f'{name}-recording.log').open('w')
         recorder = subprocess.Popen(['xcrun', 'simctl', 'io', UDID, 'recordVideo', '--codec=h264', '--force', str(OUT / f'{name}.mp4')], stdout=log, stderr=log)
         try:
-            time.sleep(1)
+            deadline = time.monotonic() + 90
+            while 'Recording started' not in (OUT / f'{name}-recording.log').read_text():
+                if recorder.poll() is not None or time.monotonic() > deadline:
+                    raise RuntimeError(f'{name}: video recorder did not become ready')
+                time.sleep(.25)
             run('xcrun', 'simctl', 'openurl', UDID, f'https://steam251.com{path}?safari-check={time.time_ns()}')
             data = wait_for_page(name, expected)
             time.sleep(3)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7
+
+- Wait for the video recorder before opening each page.
+
 ## 0.1.6
 
 - Open the hosted simulator display for video capture.
