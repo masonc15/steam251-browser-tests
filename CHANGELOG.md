@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.9
+
+- Remove the cosmetic status-bar override that can block Safari capture.
+- Open Simulator from the selected Xcode and allow slow inventory startup.
+
 ## 0.1.8
 
 - Reuse Safari between routes and retry simulator URL timeouts.

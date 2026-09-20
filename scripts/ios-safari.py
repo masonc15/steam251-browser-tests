@@ -46,7 +46,7 @@ def wait_for_page(name, expected):
 
 
 try:
-    inventory = json.loads(run('xcrun', 'simctl', 'list', '--json'))
+    inventory = json.loads(run('xcrun', 'simctl', 'list', '--json', timeout=180))
     (OUT / 'simulator-inventory.json').write_text(json.dumps(inventory, indent=2))
     runtimes = [r for r in inventory['runtimes'] if r.get('isAvailable') and '.iOS-' in r['identifier']]
     runtimes.sort(key=lambda r: tuple(map(int, re.findall(r'\d+', r['version']))), reverse=True)
@@ -63,9 +63,9 @@ try:
     run('xcrun', 'simctl', 'boot', UDID)
     run('xcrun', 'simctl', 'bootstatus', UDID, '-b', timeout=240)
     # Open the simulator display on the disposable runner so video frames refresh.
-    run('open', '-a', 'Simulator', '--args', '-CurrentDeviceUDID', UDID)
+    developer_dir = run('xcode-select', '-p').strip()
+    run('open', '-a', f'{developer_dir}/Applications/Simulator.app', '--args', '-CurrentDeviceUDID', UDID)
     time.sleep(5)
-    run('xcrun', 'simctl', 'status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged', '--batteryLevel', '100')
     for name, path, expected in [('home', '/', 'Week Top 50'), ('week', '/7day', 'Week Top 50'), ('month', '/30day', 'Month Top 100'), ('detective', '/tag/5613', 'Detective')]:
         log = (OUT / f'{name}-recording.log').open('w')
         recorder = subprocess.Popen(['xcrun', 'simctl', 'io', UDID, 'recordVideo', '--codec=h264', '--force', str(OUT / f'{name}.mp4')], stdout=log, stderr=log)
