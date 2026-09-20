@@ -62,6 +62,9 @@ try:
     (OUT / 'environment.json').write_text(json.dumps({'runtime': runtime, 'device': device['name'], 'udid': UDID}, indent=2))
     run('xcrun', 'simctl', 'boot', UDID)
     run('xcrun', 'simctl', 'bootstatus', UDID, '-b', timeout=240)
+    # Open the simulator display on the disposable runner so video frames refresh.
+    run('open', '-a', 'Simulator', '--args', '-CurrentDeviceUDID', UDID)
+    time.sleep(5)
     run('xcrun', 'simctl', 'status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged', '--batteryLevel', '100')
     for name, path, expected in [('home', '/', 'Week Top 50'), ('week', '/7day', 'Hide Early Access'), ('month', '/30day', 'Hide Early Access'), ('detective', '/tag/5613', 'Detective')]:
         if name != 'home':
@@ -92,6 +95,10 @@ try:
                 recorder.kill()
                 recorder.wait()
             log.close()
+            probe = json.loads(run('ffprobe', '-v', 'error', '-count_frames', '-show_entries', 'stream=nb_read_frames:format=duration', '-of', 'json', str(OUT / f'{name}.mp4')))
+            (OUT / f'{name}-video-info.json').write_text(json.dumps(probe, indent=2))
+            if float(probe['format']['duration']) < 2 or int(probe['streams'][0]['nb_read_frames']) < 10:
+                raise RuntimeError(f'{name}: recording lacks enough video frames')
 except Exception as error:
     results.append({'error': str(error)})
     if UDID:

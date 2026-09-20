@@ -23,7 +23,7 @@ jobs:
           brew tap facebook/fb
           brew trust --formula facebook/fb/idb-cli
           brew trust --formula facebook/fb/idb-companion
-          brew install facebook/fb/idb
+          brew install facebook/fb/idb ffmpeg
       - name: Build screenshot text reader
         run: swiftc scripts/ocr.swift -o scripts/ocr
       - name: Capture Safari

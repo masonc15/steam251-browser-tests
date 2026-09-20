@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.6
+
+- Open the hosted simulator display for video capture.
+- Reject recordings with missing frames.
+
 ## 0.1.5
 
 - Send integer tap coordinates to idb.
