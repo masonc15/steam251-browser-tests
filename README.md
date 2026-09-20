@@ -1,6 +1,6 @@
 # Steam251 browser tests
 
-Version 0.1.0. Public tests of https://steam251.com. This repository contains no application source or credentials.
+Version 0.1.1. Public tests of https://steam251.com. This repository contains no application source or credentials.
 
 ## Browser checks
 

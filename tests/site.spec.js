@@ -35,7 +35,8 @@ for (const path of ['/', '/7day', '/30day', '/tag/5613']) {
     await expect(page).toHaveTitle(/Steam|Detective|Club/i);
     await expect(page.locator('body')).not.toBeEmpty();
     await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(1800);
+    if (path !== '/tag/5613') await page.waitForFunction(() => window.fontFrames.length >= 30);
+    else await page.waitForTimeout(1800);
     const measurement = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth - innerWidth,
       frames: window.fontFrames,
@@ -85,7 +86,7 @@ test('ranking links and early-access filter persist', async ({ page }) => {
 });
 
 test('comparison loads our ranking frame', async ({ page }) => {
-  await page.goto('/compare/7day');
+  await page.goto('/compare?path=%2F7day');
   await expect(page.frameLocator('#ours-frame').locator('.ranking-row')).toHaveCount(50);
   await expect(page.locator('#steam250-frame')).toBeVisible();
   // External Steam250 content is outside this site's font guarantees.
