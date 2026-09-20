@@ -35,11 +35,11 @@ for (const path of ['/', '/7day', '/30day', '/tag/5613']) {
     await expect(page).toHaveTitle(/Steam|Detective|Club/i);
     await expect(page.locator('body')).not.toBeEmpty();
     await page.evaluate(() => document.fonts.ready);
-    if (path !== '/tag/5613') await page.waitForFunction(() => window.fontFrames.length >= 30);
-    else await page.waitForTimeout(1800);
+    await page.waitForFunction(() => window.fontFrames.length >= 30);
     const measurement = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth - innerWidth,
       frames: window.fontFrames,
+      fontFaces: [...document.styleSheets].flatMap(sheet => [...sheet.cssRules]).filter(rule => rule.type === CSSRule.FONT_FACE_RULE).map(rule => ({ family: rule.style.fontFamily, display: rule.style.getPropertyValue('font-display'), inline: rule.style.getPropertyValue('src').includes('data:font/woff2;base64,') })),
       fonts: [...document.fonts].map(f => ({ family: f.family, status: f.status })),
       visibleFontFailures: [...document.querySelectorAll('body *')].filter(el => {
         if (!el.getClientRects().length || ![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return false;
@@ -50,14 +50,20 @@ for (const path of ['/', '/7day', '/30day', '/tag/5613']) {
     await testInfo.attach('font-observations', { body: JSON.stringify(measurement, null, 2), contentType: 'application/json' });
     expect(measurement.overflow).toBeLessThanOrEqual(1);
     expect(measurement.visibleFontFailures).toEqual([]);
+    expect(measurement.fontFaces).toHaveLength(3);
+    expect(measurement.fontFaces.every(face => face.inline && face.display === 'block')).toBe(true);
     expect(externalFonts).toEqual([]);
     expect(appErrors).toEqual([]);
     expect(failedAssets).toEqual([]);
-    if (path !== '/tag/5613') {
+    {
       expect(measurement.frames.length).toBeGreaterThan(2);
-      // Ignore the first callback: layout can trigger initial inline-font decoding.
-      // Record it in the evidence rather than treating rAF as proof of a paint.
-      for (const frame of measurement.frames.slice(1)) {
+      // Inline font decoding can span several callbacks. font-display:block
+      // prevents fallback painting then. Keep every sample as evidence and
+      // require stable metrics from the first fully loaded sample onward.
+      const firstLoaded = measurement.frames.findIndex(frame => frame.every(item => item.loaded));
+      expect(firstLoaded).toBeGreaterThanOrEqual(0);
+      expect(measurement.frames.length - firstLoaded).toBeGreaterThan(2);
+      for (const frame of measurement.frames.slice(firstLoaded)) {
         expect(frame.every(item => item.loaded)).toBe(true);
         expect(frame.map(({ width, height }) => ({ width, height })))
           .toEqual(measurement.frames.at(-1).map(({ width, height }) => ({ width, height })));

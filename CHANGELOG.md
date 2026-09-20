@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Check inline font blocking and the Detective page loading frames.
+
 ## 0.1.2
 
 - Select the installed Xcode version required by idb.
