@@ -1,0 +1,11 @@
+node_modules/
+test-results/
+playwright-report/
+evidence/
+__pycache__/
+*.pyc
+.env*
+AGENTS.md
+AGENTS.*.md
+CLAUDE.md
+CLAUDE.*.md

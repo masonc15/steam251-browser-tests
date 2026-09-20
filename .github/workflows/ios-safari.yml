@@ -1,0 +1,31 @@
+name: iPhone Safari evidence
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-safari
+  cancel-in-progress: false
+jobs:
+  safari:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install idb
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+        run: brew install facebook/fb/idb
+      - name: Capture Safari
+        run: python3 scripts/ios-safari.py
+      - name: Store evidence for one day
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: iphone-safari
+          path: evidence/
+          retention-days: 1
+          compression-level: 6
+          if-no-files-found: warn
