@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Select the installed Xcode version required by idb.
+
 ## 0.1.1
 
 - Fix hosted idb installation and comparison test routing.
