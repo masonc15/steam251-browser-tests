@@ -24,8 +24,10 @@ jobs:
           brew trust --formula facebook/fb/idb-cli
           brew trust --formula facebook/fb/idb-companion
           brew install facebook/fb/idb
+      - name: Build screenshot text reader
+        run: swiftc scripts/ocr.swift -o scripts/ocr
       - name: Capture Safari
-        run: python3 scripts/ios-safari.py
+        run: python3 -u scripts/ios-safari.py
       - name: Store evidence for one day
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

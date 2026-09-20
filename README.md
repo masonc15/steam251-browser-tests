@@ -1,6 +1,6 @@
 # Steam251 browser tests
 
-Version 0.1.3. Public tests of https://steam251.com. This repository contains no application source or credentials.
+Version 0.1.4. Public tests of https://steam251.com. This repository contains no application source or credentials.
 
 ## Browser checks
 
@@ -10,8 +10,8 @@ Mobile Chromium is not iPhone Safari. Frame callbacks are observations, not proo
 
 ## iPhone Safari
 
-The manually started `iPhone Safari evidence` workflow uses a standard GitHub macOS runner. It starts an available iPhone simulator with `simctl`, operates Safari with `idb` HID/accessibility, and records route loads. No Appium, xcautomation, or XCTest is used. No local Mac or physical phone is contacted.
+The manually started `iPhone Safari evidence` workflow uses a standard GitHub macOS runner. It starts an available iPhone simulator with `simctl`, operates Safari with `idb` HID, and records route loads. Apple Vision reads the screenshot text; it does not inspect the web DOM. No Appium, xcautomation, or XCTest is used. No local Mac or physical phone is contacted.
 
-A successful workflow means evidence collection completed; it is not an automatic visual pass. Read the result JSON and inspect the images/video. The workflow records a failure if Safari does not expose the expected page content. Screenshots and video are retained for one day. There is no schedule. GitHub standard runner time is free for public repositories; storage is still subject to account allowances.
+A successful workflow means evidence collection completed; it is not an automatic visual pass. Read the result JSON and inspect the images/video. The workflow records a failure if Safari screenshots do not contain the expected page text. Screenshots and video are retained for one day. There is no schedule. GitHub standard runner time is free for public repositories; storage is still subject to account allowances.
 
 The real-device check uses the provider's free TestMu sessions and requires an authenticated provider account. It is separate from the simulator run.

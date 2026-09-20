@@ -14,6 +14,7 @@ results = []
 
 
 def run(*args, timeout=60, check=True):
+    print("Running:", " ".join(args), flush=True)
     p = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
     if check and p.returncode:
         raise RuntimeError(f'{args}: {p.stderr[-2000:]} {p.stdout[-1000:]}')
@@ -56,17 +57,22 @@ def screenshot(name):
 
 def wait_for_page(name, expected):
     for attempt in range(10):
-        data = ax(f'{name}-ax')
-        labels = ' '.join(str(n.get('AXLabel', '')) for n in elements(data))
-        if expected.lower() in labels.lower():
+        screenshot(name)
+        data = json.loads(run('scripts/ocr', str(OUT / f'{name}.png')))
+        (OUT / f'{name}-ocr.json').write_text(json.dumps(data, indent=2))
+        labels = ' '.join(row['text'] for row in data['rows'])
+        if 'View Bookmarks' in labels:
+            # Close the first-run tip seen in the iPhone 17 Pro / iOS 26.2
+            # screenshot. Coordinates are scaled from that observed screen.
+            run('idb', 'ui', 'tap', '--udid', UDID,
+                str(data['width'] / 3 * .907), str(data['height'] / 3 * .710))
+            time.sleep(1)
+            continue
+        compact = lambda text: re.sub(r'[^a-z0-9]', '', text.lower())
+        if compact(expected) in compact(labels):
             return data
-        for n in elements(data):
-            label = str(n.get('AXLabel', ''))
-            if label in ('Continue', 'Start Browsing', 'Not Now', 'Use Safari'):
-                tap(n)
         time.sleep(2)
-    screenshot(f'{name}-blocked')
-    raise RuntimeError(f'Safari did not expose expected page text: {expected}')
+    raise RuntimeError(f'Safari screenshot did not contain expected page text: {expected}')
 
 
 try:
@@ -87,10 +93,7 @@ try:
     run('xcrun', 'simctl', 'boot', UDID)
     run('xcrun', 'simctl', 'bootstatus', UDID, '-b', timeout=240)
     run('xcrun', 'simctl', 'status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged', '--batteryLevel', '100')
-    run('xcrun', 'simctl', 'openurl', UDID, 'https://steam251.com/')
-    wait_for_page('initial', 'Helping you')
-    screenshot('initial')
-    for name, path, expected in [('home', '/', 'Helping you'), ('week', '/7day', 'Hide Early Access'), ('month', '/30day', 'Hide Early Access'), ('detective', '/tag/5613', 'Detective')]:
+    for name, path, expected in [('home', '/', 'Week Top 50'), ('week', '/7day', 'Hide Early Access'), ('month', '/30day', 'Hide Early Access'), ('detective', '/tag/5613', 'Detective')]:
         run('xcrun', 'simctl', 'terminate', UDID, 'com.apple.mobilesafari', check=False)
         log = (OUT / f'{name}-recording.log').open('w')
         recorder = subprocess.Popen(['xcrun', 'simctl', 'io', UDID, 'recordVideo', '--codec=h264', '--force', str(OUT / f'{name}.mp4')], stdout=log, stderr=log)
@@ -100,13 +103,16 @@ try:
             data = wait_for_page(name, expected)
             time.sleep(3)
             screenshot(name)
-            results.append({'route': path, 'content_exposed': True, 'visual_review': 'required', 'cache': 'fresh URL; shared assets may be cached'})
+            results.append({'route': path, 'screenshot_text_verified': True, 'visual_review': 'required', 'cache': 'new simulator for home; later routes share asset cache'})
             if name == 'week':
-                checkbox = next((n for n in elements(data) if 'Hide Early Access' in str(n.get('AXLabel', '')) and 'check' in str(n.get('role', '')).lower()), None)
-                if checkbox and tap(checkbox):
+                checkbox = next((row for row in data['rows'] if 'Hide Early Access' in row['text']), None)
+                if checkbox:
+                    run('idb', 'ui', 'tap', '--udid', UDID,
+                        str(checkbox['x'] * data['width'] / 3), str(checkbox['y'] * data['height'] / 3))
                     time.sleep(1)
-                    ax('week-filter-after')
                     screenshot('week-filter-after')
+                    results[-1]['filter_tap_sent'] = True
+
         finally:
             recorder.send_signal(signal.SIGINT)
             try:
